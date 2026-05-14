@@ -1,0 +1,254 @@
+{
+  "spec_name": "robocombine",
+  "description": "RoboCombine 19-task compositional evaluation split for long-instruction, Oracle HSE, and Ordered HSE evaluation.",
+  "default_task_config": "robocombine_eval",
+  "default_episodes": 5,
+  "default_max_steps_per_episode": 1500,
+  "supported_tracks": [
+    "full_inst",
+    "oracle_hse",
+    "ordered_hse"
+  ],
+  "supported_policies": [
+    "Motus",
+    "pi05"
+  ],
+  "metrics": {
+    "primary": "sr_ordered",
+    "secondary": [
+      "episode_success_rate",
+      "all_subtasks_rate",
+      "stage_conversions"
+    ]
+  },
+  "tasks": [
+    {
+      "task_name": "arrange_sign_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/arrange_sign_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Sort objects",
+          "Rotate QR code"
+        ],
+        "long": "Sort objects, then rotate QR code"
+      }
+    },
+    {
+      "task_name": "bedside_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/bedside_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place fan on pad",
+          "Move pill bottle to pad"
+        ],
+        "long": "Place fan on pad, then move pill bottle to pad"
+      }
+    },
+    {
+      "task_name": "breakfast_prep_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/breakfast_prep_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place cup on coaster",
+          "Place bread in basket"
+        ],
+        "long": "Place cup on coaster, then place bread in basket"
+      }
+    },
+    {
+      "task_name": "checkout_counter_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/checkout_counter_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place phone on stand",
+          "Rotate QR code"
+        ],
+        "long": "Place phone on stand, then rotate QR code"
+      }
+    },
+    {
+      "task_name": "counter_cleanup_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/counter_cleanup_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place container on plate",
+          "Rotate QR code"
+        ],
+        "long": "Place container on plate, then rotate QR code"
+      }
+    },
+    {
+      "task_name": "desk_arrange_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/desk_arrange_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Move stapler to pad",
+          "Place phone on stand"
+        ],
+        "long": "Move stapler to pad, then place phone on stand"
+      }
+    },
+    {
+      "task_name": "hobby_desk_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/hobby_desk_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place object on stand",
+          "Move pill bottle to pad"
+        ],
+        "long": "Place object on stand, then move pill bottle to pad"
+      }
+    },
+    {
+      "task_name": "living_room_tidy_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/living_room_tidy_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place cup on coaster",
+          "Place fan on pad"
+        ],
+        "long": "Place cup on coaster, then place fan on pad"
+      }
+    },
+    {
+      "task_name": "office_desk_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/office_desk_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place mouse on pad",
+          "Move pill bottle to pad"
+        ],
+        "long": "Place mouse on pad, then move pill bottle to pad"
+      }
+    },
+    {
+      "task_name": "office_organize_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/office_organize_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place mouse on pad",
+          "Stamp seal"
+        ],
+        "long": "Place mouse on pad, then stamp seal"
+      }
+    },
+    {
+      "task_name": "reception_desk_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/reception_desk_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place mouse on pad",
+          "Rotate QR code"
+        ],
+        "long": "Place mouse on pad, then rotate QR code"
+      }
+    },
+    {
+      "task_name": "stationery_sort_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/stationery_sort_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Move stapler to pad",
+          "Move pill bottle to pad"
+        ],
+        "long": "Move stapler to pad, then move pill bottle to pad"
+      }
+    },
+    {
+      "task_name": "store_display_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/store_display_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place object on stand",
+          "Rotate QR code"
+        ],
+        "long": "Place object on stand, then rotate QR code"
+      }
+    },
+    {
+      "task_name": "tabletop_arrange_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/tabletop_arrange_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place container on plate",
+          "Place fan on pad"
+        ],
+        "long": "Place container on plate, then place fan on pad"
+      }
+    },
+    {
+      "task_name": "workspace_setup_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/workspace_setup_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place mouse on pad",
+          "Place phone on stand"
+        ],
+        "long": "Place mouse on pad, then place phone on stand"
+      }
+    },
+    {
+      "task_name": "bakery_close_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/bakery_close_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place bread in basket",
+          "Turn switch"
+        ],
+        "long": "Place bread in basket, then turn switch"
+      }
+    },
+    {
+      "task_name": "kitchen_switch_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/kitchen_switch_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place container on plate",
+          "Turn switch"
+        ],
+        "long": "Place container on plate, then turn switch"
+      }
+    },
+    {
+      "task_name": "room_comfort_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/room_comfort_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place fan on pad",
+          "Turn switch"
+        ],
+        "long": "Place fan on pad, then turn switch"
+      }
+    },
+    {
+      "task_name": "smart_home_2tasks",
+      "stage_count": 2,
+      "env_file": "envs/smart_home_2tasks.py",
+      "instruction": {
+        "segments": [
+          "Place phone on stand",
+          "Turn switch"
+        ],
+        "long": "Place phone on stand, then turn switch"
+      }
+    }
+  ]
+}
