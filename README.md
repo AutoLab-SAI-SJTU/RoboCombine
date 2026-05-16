@@ -1,96 +1,87 @@
-RoboCombine
-===========
+<div align="center">
 
-`RoboCombine` is a code-only open-source evaluation repository for the
-RoboCombine compositional robot-manipulation benchmark.
+<h1>
+  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Bar%20Chart.png" alt="Bar Chart" width="40" height="40" />
+  RoboCombine: Code-Only Evaluation Runtime for Compositional Robot Manipulation
+</h1>
 
-This repository publishes only evaluation code, task specifications, runners,
-summaries, and policy adapters.
+<div align="center">
+  <a href="https://huggingface.co/datasets/AutoLab-SJTU/RoboCombine">
+    <img src="https://img.shields.io/badge/HuggingFace-RoboCombine-yellow?logo=huggingface&logoColor=yellow">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-lightgrey">
+  </a>
+</div>
 
-The current public scope is intentionally fixed:
+<p align="center">
+  3 tracks: <code>full_inst</code>, <code>oracle_hse</code>, <code>ordered_hse</code><br>
+  2 policy adapters: <code>Motus</code>, <code>pi05</code><br>
+</p>
 
-- 3 HSE variants:
-  - `full_inst`
-  - `oracle_hse`
-  - `ordered_hse`
-- 2 policies:
-  - `Motus`
-  - `pi05`
+</div>
 
-Legacy support outside this scope has been removed:
+## 📢 News
+> **[2026-05]** 🎉 Evaluation code of RoboCombine is available now.
 
-- `oracle_hse_reset_origin`
-- `legacy_v12`
-- `robo_dopamine`
-- `xvla/holobrain adapter`
-- external `compare/legacy` evaluation dependencies
+## ✨ What does RoboCombine provide?
 
-Self-Contained Scope
---------------------
+| Item | Public scope |
+| --- | --- |
+| Benchmark tasks| `19` compositional tasks |
+| Supported tracks | `full_inst`, `oracle_hse`, `ordered_hse` |
+| Supported policies | `Motus`, `pi05` |
+| Primary metric | `sr_ordered` |
 
-The repository is self-contained for evaluation logic:
+## ⚙️ Runtime setup
 
-- `handoff_eval/`: split runner, summaries, HSE controller, and Ordered HSE runtime
-- `policy/Motus/`
-- `policy/pi05/`
-- vendored `xvla_progress_predictor/`
-- vendored `openpi/`
+For evaluation, `Motus` and `pi05` must use separate Python runtimes:
 
-Users still need to provide the following external runtime assets:
+Start from the detailed runtime guides:
 
-- simulator assets
-- policy checkpoints
-- predictor bundle and X-VLA backbone weights for `ordered_hse`
-- WAN, VLM, tokenizer, and policy weights required by `Motus`
+- [docs/runtime_envs.md](docs/runtime_envs.md)
+- [policy/README.md](policy/README.md)
+- [policy/Motus/README.md](policy/Motus/README.md)
+- [policy/pi05/README.md](policy/pi05/README.md)
 
-Repository constraints:
-
-- no tracked symlinks
-- no tracked model directories
-- only upstream URLs and external path contracts are documented
-
-Important notes:
-
-- `Motus` and `pi05` must use separate Python runtimes
-- the currently validated interpreter versions are:
-  - `Motus` -> `/path/to/motus/python` (`Python 3.10`)
-  - `pi05` -> `/path/to/pi05/python3.11` (`Python 3.11`)
-- runtime details are documented in [docs/runtime_envs.md](docs/runtime_envs.md)
-- policy-specific details are documented in [policy/README.md](policy/README.md)
-
-Environment
------------
-
-Replace the placeholder paths below with your own runtime locations:
+Common runtime entrypoints:
 
 ```bash
 export MOTUS_PYTHON_BIN=/path/to/motus/python
 export PI05_PYTHON_BIN=/path/to/pi05/python3.11
+export ROBOCOMBINE_ASSETS_DIR=/path/to/simulator/assets
 ```
 
-Runtime entrypoints:
+If you only want a repo-local environment for source validation or packaging,
+use `uv` in the repository root:
 
-- `Motus` runs with `"$MOTUS_PYTHON_BIN"`
-- `pi05` runs with `"$PI05_PYTHON_BIN"`
-
-RoboCombine Split
------------------
-
-The RoboCombine split specification lives at:
-
-```text
-handoff_eval/specs/robocombine.json
+```bash
+uv venv .venv --python 3.11
+uv sync
 ```
 
-The spec currently declares only:
+## 🚀 Evaluation
 
-- `supported_tracks = ["full_inst", "oracle_hse", "ordered_hse"]`
-- `supported_policies = ["Motus", "pi05"]`
+### Quick Command Index
 
-Run Split Evaluation
---------------------
+| If you want ... | Recommended entry |
+| --- | --- |
+| Inspect the released task split | `run_split.py --list-tasks` |
+| Run `Motus` on `full_inst` | See `2. Motus on full_inst` below |
+| Run `Motus` on `oracle_hse` | See `3. Motus on oracle_hse` below |
+| Run `Motus` on `ordered_hse` | See `4. Motus on ordered_hse` below |
+| Run `pi05` on `oracle_hse` | See `5. pi05 on oracle_hse` below |
 
-List tasks:
+<details>
+<summary><strong>1. Inspect the split and list supported tasks</strong> (<code>handoff_eval/runner/run_split.py</code>)</summary>
+
+Use this when you want to verify the public split before starting a long run.
+
+**Relevant spec**
+
+- `handoff_eval/specs/robocombine.json`
+
+**Recommended command**
 
 ```bash
 "$MOTUS_PYTHON_BIN" handoff_eval/runner/run_split.py \
@@ -103,7 +94,28 @@ List tasks:
   --list-tasks
 ```
 
-`full_inst`:
+**What the released split currently declares**
+
+- supported tracks: `full_inst`, `oracle_hse`, `ordered_hse`
+- supported policies: `Motus`, `pi05`
+- default episodes: `5`
+- default max steps per episode: `1500`
+
+</details>
+
+<details>
+<summary><strong>2. Motus on full_inst</strong></summary>
+
+Use this when you want long-instruction evaluation with the `Motus` policy.
+
+**Required external paths**
+
+- `ROBOCOMBINE_ASSETS_DIR`
+- `--checkpoint`
+- `--motus-wan-dir`
+- `--motus-vlm-dir`
+
+**Recommended command**
 
 ```bash
 mkdir -p handoff_eval_logs
@@ -120,7 +132,28 @@ nohup "$MOTUS_PYTHON_BIN" handoff_eval/runner/run_split.py \
 echo $! > handoff_eval_logs/robocombine_full_inst.pid
 ```
 
-`oracle_hse`:
+**Useful follow-up commands**
+
+```bash
+tail -f handoff_eval_logs/robocombine_full_inst.out
+kill "$(cat handoff_eval_logs/robocombine_full_inst.pid)"
+```
+
+</details>
+
+<details>
+<summary><strong>3. Motus on oracle_hse</strong></summary>
+
+Use this when you want the oracle HSE track with the `Motus` policy.
+
+**Required external paths**
+
+- `ROBOCOMBINE_ASSETS_DIR`
+- `--checkpoint`
+- `--motus-wan-dir`
+- `--motus-vlm-dir`
+
+**Recommended command**
 
 ```bash
 mkdir -p handoff_eval_logs
@@ -137,7 +170,31 @@ nohup "$MOTUS_PYTHON_BIN" handoff_eval/runner/run_split.py \
 echo $! > handoff_eval_logs/robocombine_oracle_hse.pid
 ```
 
-`ordered_hse`:
+**Useful follow-up commands**
+
+```bash
+tail -f handoff_eval_logs/robocombine_oracle_hse.out
+kill "$(cat handoff_eval_logs/robocombine_oracle_hse.pid)"
+```
+
+</details>
+
+<details>
+<summary><strong>4. Motus on ordered_hse</strong></summary>
+
+Use this when you want predictor-guided `ordered_hse` evaluation with
+`Motus`.
+
+**Required external paths**
+
+- `ROBOCOMBINE_ASSETS_DIR`
+- `--checkpoint`
+- `--motus-wan-dir`
+- `--motus-vlm-dir`
+- `--real-predictor-bundle-dir`
+- `--real-xvla-model-dir`
+
+**Recommended command**
 
 ```bash
 mkdir -p handoff_eval_logs
@@ -156,39 +213,36 @@ nohup "$MOTUS_PYTHON_BIN" handoff_eval/runner/run_split.py \
 echo $! > handoff_eval_logs/robocombine_ordered_hse.pid
 ```
 
-Stop a run:
+**Useful follow-up commands**
 
 ```bash
+tail -f handoff_eval_logs/robocombine_ordered_hse.out
 kill "$(cat handoff_eval_logs/robocombine_ordered_hse.pid)"
 ```
 
-Checkpoint Sources
-------------------
+**Note**
 
-The `RoboCombine` source release does not bundle checkpoints. Runtime paths must
-always be supplied explicitly.
+- In `ordered_hse`, predictor switching is recorded as a switching decision only.
+- It is not written back as environment-confirmed completion.
 
-Recommended upstream sources:
+</details>
 
-- Motus RoboTwin2:
-  - `https://huggingface.co/motus-robotics/Motus_robotwin2`
-- Motus latent-action pretrain:
-  - `https://huggingface.co/motus-robotics/Motus`
-- Motus WAN pretrain:
-  - `https://huggingface.co/motus-robotics/Motus_Wan2_2_5B_pretrain`
-- Qwen3-VL-2B-Instruct:
-  - `https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct`
-- Wan2.2-TI2V-5B:
-  - `https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B`
+<details>
+<summary><strong>5. pi05 on oracle_hse</strong></summary>
 
-Runtime path contract:
+Use this when you want to evaluate the `pi05/OpenPI` adapter on the public
+`oracle_hse` track.
 
-- `--checkpoint` points to the `Motus` policy checkpoint
-- `--motus-wan-dir` points to external WAN runtime assets
-- `--motus-vlm-dir` points to the external VLM/tokenizer directory
+**Required external paths**
 
-pi05 Example
-------------
+- `ROBOCOMBINE_ASSETS_DIR`
+- `--checkpoint`
+- `--pi05-train-config`
+- `--pi05-model-name`
+- `--pi05-checkpoint-id`
+- `--pi05-step`
+
+**Recommended command**
 
 ```bash
 mkdir -p handoff_eval_logs
@@ -206,16 +260,46 @@ nohup "$PI05_PYTHON_BIN" handoff_eval/runner/run_split.py \
 echo $! > handoff_eval_logs/robocombine_pi05_oracle_hse.pid
 ```
 
-Outputs
--------
+**Useful follow-up commands**
 
-Each split run writes to:
+```bash
+tail -f handoff_eval_logs/robocombine_pi05_oracle_hse.out
+kill "$(cat handoff_eval_logs/robocombine_pi05_oracle_hse.pid)"
+```
+
+</details>
+
+## 📦 Checkpoints and external assets
+
+The public `RoboCombine` source release does not bundle checkpoints. Runtime
+paths must always be injected explicitly through CLI flags or environment
+variables.
+
+Recommended upstream sources for `Motus`:
+
+- `https://huggingface.co/motus-robotics/Motus_robotwin2`
+- `https://huggingface.co/motus-robotics/Motus`
+- `https://huggingface.co/motus-robotics/Motus_Wan2_2_5B_pretrain`
+- `https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct`
+- `https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B`
+
+Runtime path contract:
+
+- `ROBOCOMBINE_ASSETS_DIR` points to the external simulator assets root.
+- `--checkpoint` points to the active policy checkpoint root.
+- `--motus-wan-dir` or `ROBOCOMBINE_MOTUS_WAN_DIR` points to WAN runtime assets.
+- `--motus-vlm-dir` or `ROBOCOMBINE_MOTUS_VLM_DIR` points to the VLM/tokenizer directory.
+- `--real-predictor-bundle-dir` and `--real-xvla-model-dir` are required for `ordered_hse`.
+
+## 🗂️ Outputs
+
+Each evaluation run writes to:
 
 ```text
 handoff_eval_runs/robocombine/<track_tag>/<policy>/<run_id>/
 ```
 
-Important files:
+Important artifacts:
 
 ```text
 run_manifest.json
@@ -225,13 +309,9 @@ tasks/<task_name>/task.log
 tasks/<task_name>/evaluation_statistics.json
 ```
 
-The primary metric is `sr_ordered`.
+`summary.json` and `summary.md` are the primary entrypoints for comparing runs.
 
-In `ordered_hse`, predictor switching is recorded only as a switching decision.
-It is not written back as environment-confirmed completion.
-
-Verification
-------------
+## ✅ Verification
 
 ```bash
 uv run pytest
