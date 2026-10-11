@@ -1,0 +1,11 @@
+policy_name: null
+task_name: null
+task_config: null
+ckpt_setting: null
+seed: null
+instruction_type: unseen
+train_config_name: null
+model_name: null
+checkpoint_id: 30000
+pi0_step: 50
+custom_ckpt_path: null
