@@ -1,0 +1,97 @@
+{
+  "arrange_sign_2tasks": {
+    "s1": "Sort objects",
+    "s2": "Rotate QR code",
+    "long": "Sort objects, then rotate QR code"
+  },
+  "bedside_2tasks": {
+    "s1": "Place fan on pad",
+    "s2": "Move pill bottle to pad",
+    "long": "Place fan on pad, then move pill bottle to pad"
+  },
+  "breakfast_prep_2tasks": {
+    "s1": "Place cup on coaster",
+    "s2": "Place bread in basket",
+    "long": "Place cup on coaster, then place bread in basket"
+  },
+  "checkout_counter_2tasks": {
+    "s1": "Place phone on stand",
+    "s2": "Rotate QR code",
+    "long": "Place phone on stand, then rotate QR code"
+  },
+  "counter_cleanup_2tasks": {
+    "s1": "Place container on plate",
+    "s2": "Rotate QR code",
+    "long": "Place container on plate, then rotate QR code"
+  },
+  "desk_arrange_2tasks": {
+    "s1": "Move stapler to pad",
+    "s2": "Place phone on stand",
+    "long": "Move stapler to pad, then place phone on stand"
+  },
+  "hobby_desk_2tasks": {
+    "s1": "Place object on stand",
+    "s2": "Move pill bottle to pad",
+    "long": "Place object on stand, then move pill bottle to pad"
+  },
+  "living_room_tidy_2tasks": {
+    "s1": "Place cup on coaster",
+    "s2": "Place fan on pad",
+    "long": "Place cup on coaster, then place fan on pad"
+  },
+  "office_desk_2tasks": {
+    "s1": "Place mouse on pad",
+    "s2": "Move pill bottle to pad",
+    "long": "Place mouse on pad, then move pill bottle to pad"
+  },
+  "office_organize_2tasks": {
+    "s1": "Place mouse on pad",
+    "s2": "Stamp seal",
+    "long": "Place mouse on pad, then stamp seal"
+  },
+  "reception_desk_2tasks": {
+    "s1": "Place mouse on pad",
+    "s2": "Rotate QR code",
+    "long": "Place mouse on pad, then rotate QR code"
+  },
+  "stationery_sort_2tasks": {
+    "s1": "Move stapler to pad",
+    "s2": "Move pill bottle to pad",
+    "long": "Move stapler to pad, then move pill bottle to pad"
+  },
+  "store_display_2tasks": {
+    "s1": "Place object on stand",
+    "s2": "Rotate QR code",
+    "long": "Place object on stand, then rotate QR code"
+  },
+  "tabletop_arrange_2tasks": {
+    "s1": "Place container on plate",
+    "s2": "Place fan on pad",
+    "long": "Place container on plate, then place fan on pad"
+  },
+  "workspace_setup_2tasks": {
+    "s1": "Place mouse on pad",
+    "s2": "Place phone on stand",
+    "long": "Place mouse on pad, then place phone on stand"
+  },
+  "bakery_close_2tasks": {
+    "s1": "Place bread in basket",
+    "s2": "Turn switch",
+    "long": "Place bread in basket, then turn switch"
+  },
+  "kitchen_switch_2tasks": {
+    "s1": "Place container on plate",
+    "s2": "Turn switch",
+    "long": "Place container on plate, then turn switch"
+  },
+  "room_comfort_2tasks": {
+    "s1": "Place fan on pad",
+    "s2": "Turn switch",
+    "long": "Place fan on pad, then turn switch"
+  },
+  "smart_home_2tasks": {
+    "s1": "Place phone on stand",
+    "s2": "Turn switch",
+    "long": "Place phone on stand, then turn switch"
+  }
+}

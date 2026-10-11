@@ -1,0 +1,44 @@
+prune .git
+prune .venv
+prune .venv.*
+prune .pytest_cache
+prune .ruff_cache
+prune .cache
+prune dist
+prune release
+prune release_artifacts
+prune handoff_eval_runs
+prune handoff_eval_runs*
+prune handoff_eval_logs
+prune smoke_logs
+prune gflow_logs
+prune docs-private
+prune metadata-private
+prune scripts
+prune assets
+prune data
+prune cache
+prune policy/*/.venv*
+prune policy/*/venv*
+
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+include THIRD_PARTY_NOTICES.md
+include pyproject.toml
+
+recursive-include handoff_eval/specs *.json
+recursive-include script *.py
+recursive-include task_config *.yml *.yaml
+recursive-include docs *.md
+recursive-include metadata *.md
+recursive-include tests *.py
+
+include policy/README.md
+include policy/Motus/README.md
+include policy/Motus/deploy_policy.yml
+include policy/pi05/README.md
+include policy/pi05/deploy_policy.yml
+
+global-exclude __pycache__ *.py[cod] *.so
