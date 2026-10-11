@@ -23,28 +23,16 @@ ORDERED_HSE = "ordered_hse"
 @dataclass(frozen=True)
 class InstructionSwitchConfig:
     clear_action_cache: bool = True
-    enable_forcing: bool = False
-    forcing_steps: int = 1
-    enable_cfg: bool = False
-    guidance_scale: float = 2.0
 
     @classmethod
     def from_args(cls, args: dict[str, Any]) -> "InstructionSwitchConfig":
         return cls(
             clear_action_cache=parse_clear_cache(args.get("clear_cache", True)),
-            enable_forcing=bool(args.get("forcing_mode", False)),
-            forcing_steps=max(1, int(args.get("forcing_steps", 1) or 1)),
-            enable_cfg=bool(args.get("cfg_mode", False)),
-            guidance_scale=float(args.get("guidance_scale", 2.0) or 2.0),
         )
 
     def as_metadata(self) -> dict[str, Any]:
         return {
             "switch_cache_reset": bool(self.clear_action_cache),
-            "forcing_enabled": bool(self.enable_forcing),
-            "forcing_steps": int(self.forcing_steps),
-            "cfg_enabled": bool(self.enable_cfg),
-            "guidance_scale": float(self.guidance_scale),
         }
 
 
@@ -63,19 +51,11 @@ def apply_instruction_switch(
     if hasattr(model, "prepare_instruction_switch"):
         switch_info = model.prepare_instruction_switch(
             clear_action_cache=config.clear_action_cache,
-            enable_forcing=config.enable_forcing,
-            forcing_steps=config.forcing_steps,
-            enable_cfg=config.enable_cfg,
-            guidance_scale=config.guidance_scale,
         )
     else:
         raise TypeError("Policy must implement prepare_instruction_switch")
     switch_info = dict(switch_info or {})
     switch_info.setdefault("cache_cleared", bool(config.clear_action_cache))
-    switch_info.setdefault("forcing_requested", bool(config.enable_forcing))
-    switch_info.setdefault("forcing_enabled", bool(config.enable_forcing))
-    switch_info.setdefault("cfg_enabled", bool(config.enable_cfg))
-    switch_info.setdefault("guidance_scale", float(config.guidance_scale) if config.enable_cfg else None)
     return switch_info
 
 

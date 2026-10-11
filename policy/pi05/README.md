@@ -108,15 +108,9 @@ Stop the run:
 kill "$(cat handoff_eval_logs/robocombine_pi05.pid)"
 ```
 
-## Verified Coverage
+## Runtime Contract Tests
 
-Validated coverage:
-
-- `1ep smoke`
-  - `full_inst`
-  - `oracle_hse`
-  - `ordered_hse`
-- `breakfast_prep_2tasks` (`cup-bread`) `10ep`
-  - `full_inst`
-  - `oracle_hse`
-  - `ordered_hse`
+From the repository root, run `python -m pytest tests` with NumPy, PyYAML,
+PyTorch, Pillow, and pytest installed. The tests exercise language handoffs and
+both `clear_cache` settings using fake inference backends. They do not replace
+GPU inference or simulator evaluation with model checkpoints.

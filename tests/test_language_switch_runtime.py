@@ -95,35 +95,43 @@ def make_policy(name):
     cls = ns['MotusPolicy']
     model = cls.__new__(cls)
     model.action_cache = deque()
-    model.obs_cache = deque([object()])
-    model.current_state = object()
+    import torch
+    from PIL import Image
+    ns.update(torch=torch, Image=Image, time=SimpleNamespace(time=time.perf_counter))
+    model.obs_cache = deque()
+    model.current_state = torch.zeros(1, 14)
     model.current_instruction = ''
     model.device = 'cpu'
-    model.prev_action = None
-    model.last_executed_action = None
-    model.last_action_chunk = None
-    model.cfg_max_inferences = 0
-    model.progress_trigger_metadata = {}
-    model.update_obs = lambda obs: None
-    model.record_executed_action = lambda action: None
-
-    class EncoderBoundary(Exception):
-        pass
+    model.config_dict = {'model': {'inference': {'num_inference_timesteps': 1}}}
+    model.inference_times = []
+    model.total_inference_time = 0.0
+    model.inference_count = 0
+    model.step_count = 0
+    model.update_obs = lambda obs: model.obs_cache.append(torch.zeros(1, 3, 2, 2))
 
     def encoder(texts, device):
-        prompts.extend(texts)  # actual Motus text-encoder input, including scene prefix
-        raise EncoderBoundary
+        prompts.extend(texts)  # actual Motus text-encoder input
+        return [torch.full((2, 2), 1.0 if texts[0].endswith('S1') else 2.0)]
+
+    class Processor:
+        def apply_chat_template(self, messages, **kwargs):
+            text = messages[0]['content'][0]['text']
+            assert text == prompts[-1]  # both language pathways agree
+            return text
+
+        def __call__(self, text, **kwargs):
+            value = 1 if text[0].endswith('S1') else 2
+            return {key: torch.full((1, 2), value) for key in
+                    ['input_ids', 'attention_mask', 'pixel_values']}
+
+    def inference_step(**kwargs):
+        value = int(kwargs['language_embeddings'][0][0, 0])
+        assert int(kwargs['vlm_inputs'][0]['input_ids'][0, 0]) == value
+        return None, torch.full((1, 4, 14), float(value))
 
     model.t5_encoder = encoder
-
-    def infer():
-        try:
-            cls.get_action(model)
-        except EncoderBoundary:
-            return np.full((4, 14), 1 if prompts[-1].endswith('S1') else 2)
-        raise AssertionError('did not reach text encoder')
-
-    model.get_action = infer
+    model.vlm_processor = Processor()
+    model.model = SimpleNamespace(inference_step=inference_step)
     return model, ns['eval'], prompts
 
 
@@ -232,3 +240,71 @@ def test_direct_cli_and_yaml_clear_cache(option, expected, tmp_path, monkeypatch
     monkeypatch.setattr(sys, 'argv', ['eval_policy.py', '--config', str(config), *option])
     result = ns['parse_args_and_config']()
     assert InstructionSwitchConfig.from_args(result).clear_action_cache is expected
+
+
+@pytest.mark.parametrize('name', ['pi05', 'Motus'])
+def test_episode_reset_drops_old_actions_and_language(name):
+    model, evaluate, prompts = make_policy(name)
+    env = Env()
+    evaluate(env, model, env.get_obs())
+    assert len(model.action_cache) == 3
+    ns = load_definitions(f'policy/{name}/deploy_policy.py', ['reset_model'])
+    model.episode_count = 0
+    ns['reset_model'](model)
+    assert not model.action_cache
+    env.instruction = 'S2'
+    if name == 'Motus':
+        model.current_state = __import__('torch').zeros(1, 14)
+    evaluate(env, model, env.get_obs())
+    assert env.actions == [1, 2]
+    assert prompts[-1].endswith('S2')
+
+
+@pytest.mark.parametrize('mode', ['live', 'dry_run'])
+def test_threshold_predictor_rule_and_stage_reset(mode, tmp_path, monkeypatch):
+    from handoff_eval import real_switch_runtime as runtime
+
+    class Backend:
+        def __init__(self, **kwargs):
+            pass
+
+        def begin_stage(self, **kwargs):
+            return {}
+
+        def observe(self, observation, env_step):
+            return {'sampled': observation is not None, 'score': observation,
+                    'predictor_step_index': env_step}
+
+    monkeypatch.setattr(runtime, 'XVLARealSwitchBackend', Backend)
+    monkeypatch.setattr(runtime, 'resolve_predictor_assets_dir', lambda p: p)
+    session = runtime.XVLARealSwitchSession(predictor_bundle_dir=str(tmp_path),
+        mode=mode, threshold=0.8, consecutive_frames=2, min_dwell_steps=3)
+    session.begin_stage(instruction='S1', stage_index=0, episode_step=0, reset_reason='start')
+    for step, score in enumerate([0.9, 0.7, 0.8, None, 0.9], 1):
+        result = session.observe(score, env_step=step)
+        assert result['should_switch'] == (step == 5 and mode == 'live')
+        assert result['would_switch'] == (step == 5)
+    assert len(session.export_payload()['trigger_events']) == 1
+    session.begin_stage(instruction='S2', stage_index=1, episode_step=5,
+                        reset_reason='switch', can_switch=False)
+    for step in range(6, 10):
+        assert not session.observe(0.99, env_step=step)['would_switch']
+    assert session.maybe_switch()['stage_index'] == 1
+
+
+@pytest.mark.parametrize('name', ['pi05', 'Motus'])
+@pytest.mark.parametrize('clear_cache', ['true', 'false'])
+def test_ordered_runner_forwards_threshold_and_cache(name, clear_cache, tmp_path, monkeypatch):
+    import sys
+    from handoff_eval.runner import run_split
+    monkeypatch.setattr(sys, 'argv', ['run_split', '--spec', 'robocombine',
+        '--track', ORDERED_HSE, '--policy', name, '--checkpoint', str(tmp_path),
+        '--clear-cache', clear_cache, '--real-threshold', '0.85',
+        '--motus-wan-dir', str(tmp_path), '--motus-vlm-dir', str(tmp_path)])
+    args = run_split.parse_args()
+    spec = run_split.load_spec('robocombine')
+    command = run_split.build_eval_command(args=args, spec=spec, task=spec['tasks'][0],
+        checkpoint_path=tmp_path, checkpoint_label='test', task_dir=tmp_path, seed_receipt=None)
+    assert command[command.index('--clear_cache') + 1] == clear_cache
+    assert command[command.index('--real_threshold') + 1] == '0.85'
+    assert command[command.index('--real_decision_rule') + 1] == 'threshold'

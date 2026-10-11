@@ -10,8 +10,6 @@
 /dist/
 /release/
 /release_artifacts/
-/docs-private/
-/metadata-private/
 /scripts/
 /handoff_eval_runs*/
 /handoff_eval_logs*/

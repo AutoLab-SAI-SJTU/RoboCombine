@@ -22,7 +22,7 @@
 </div>
 
 ## 📢 News
-> **[2026-05]** 🎉 Evaluation code of RoboCombine is available now.
+> **[2026-10]** 🎉 Evaluation code of RoboCombine is available now.
 
 ## ✨ What does RoboCombine provide?
 

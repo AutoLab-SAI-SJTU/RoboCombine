@@ -143,7 +143,7 @@ class XVLARealSwitchBackend:
 
 class XVLARealSwitchSession:
 
-    def __init__(self, *, predictor_bundle_dir: str, xvla_model_dir: str | None=None, camera_key: str='head_camera', decision_rule: str='threshold', mode: str='live', threshold: float=0.8, consecutive_frames: int=3, min_dwell_steps: int=5, score_log_interval: int=10, ema_alpha: float=0.4, armed_threshold: float=0.82, armed_consecutive_frames: int=3, switch_threshold: float=0.9, switch_consecutive_frames: int=3, plateau_threshold: float=0.86, plateau_window: int=8, new_high_epsilon: float=0.005, device: str='auto') -> None:
+    def __init__(self, *, predictor_bundle_dir: str, xvla_model_dir: str | None=None, camera_key: str='head_camera', decision_rule: str='threshold', mode: str='live', threshold: float=0.8, consecutive_frames: int=3, min_dwell_steps: int=5, score_log_interval: int=10, device: str='auto') -> None:
         self.bundle_dir = str(resolve_predictor_assets_dir(predictor_bundle_dir))
         self.xvla_model_dir = str(resolve_xvla_model_dir(xvla_model_dir)) if resolve_xvla_model_dir(xvla_model_dir) else None
         self.camera_key = str(camera_key or 'head_camera')
@@ -155,20 +155,11 @@ class XVLARealSwitchSession:
         self.consecutive_frames = max(1, int(consecutive_frames))
         self.min_dwell_steps = max(1, int(min_dwell_steps))
         self.score_log_interval = max(1, int(score_log_interval))
-        self.ema_alpha = min(max(float(ema_alpha), 1e-06), 1.0)
-        self.armed_threshold = float(armed_threshold)
-        self.armed_consecutive_frames = max(1, int(armed_consecutive_frames))
-        self.switch_threshold = float(switch_threshold)
-        self.switch_consecutive_frames = max(1, int(switch_consecutive_frames))
-        self.plateau_threshold = float(plateau_threshold)
-        self.plateau_window = max(1, int(plateau_window))
-        self.new_high_epsilon = float(new_high_epsilon)
         self.device = str(device or 'auto')
         self._backend = XVLARealSwitchBackend(bundle_dir=self.bundle_dir, xvla_model_dir=self.xvla_model_dir, camera_key=self.camera_key, device=self.device)
         self._active_instruction = ''
         self._active_stage_index = 0
         self._scores: list[float] = []
-        self._decision_scores: list[float] = []
         self._score_trace: list[dict[str, Any]] = []
         self._trigger_events: list[dict[str, Any]] = []
         self._predictor_reset_events: list[dict[str, Any]] = []
@@ -178,15 +169,11 @@ class XVLARealSwitchSession:
         self._warnings: list[str] = []
         self._can_switch = True
         self._latest_valid_score: float | None = None
-        self._latest_decision_score: float | None = None
-        self._armed = False
-        self._peak_score_since_armed: float | None = None
-        self._peak_frame_since_armed: int | None = None
 
     @staticmethod
     def _normalize_decision_rule(decision_rule: str) -> str:
         resolved = str(decision_rule or 'threshold').strip().lower()
-        if resolved not in {'threshold', 'practical_v2'}:
+        if resolved not in {'threshold'}:
             raise ValueError(f'Unsupported real switch decision rule: {decision_rule}')
         return resolved
 
@@ -201,38 +188,7 @@ class XVLARealSwitchSession:
         return consecutive
 
     def _decision_config_metadata(self) -> dict[str, Any]:
-        return {'decision_rule': self.decision_rule, 'ema_alpha': self.ema_alpha, 'armed_threshold': self.armed_threshold, 'armed_consecutive_frames': self.armed_consecutive_frames, 'switch_threshold': self.switch_threshold, 'switch_consecutive_frames': self.switch_consecutive_frames, 'plateau_threshold': self.plateau_threshold, 'plateau_window': self.plateau_window, 'new_high_epsilon': self.new_high_epsilon}
-
-    def _update_decision_score(self, score: float) -> float:
-        if not self._decision_scores:
-            decision_score = float(score)
-        else:
-            decision_score = self.ema_alpha * float(score) + (1.0 - self.ema_alpha) * float(self._decision_scores[-1])
-        self._decision_scores.append(decision_score)
-        self._latest_decision_score = decision_score
-        return decision_score
-
-    def _recent_peak_gain(self) -> float | None:
-        if len(self._decision_scores) < self.plateau_window:
-            return None
-        window = self._decision_scores[-self.plateau_window:]
-        return float(max(window) - window[0])
-
-    def _reset_peak_tracker(self) -> None:
-        self._peak_score_since_armed = None
-        self._peak_frame_since_armed = None
-
-    def _update_peak_tracker(self, decision_score: float) -> None:
-        if not self._armed:
-            return
-        current_frame = len(self._decision_scores) - 1
-        if self._peak_score_since_armed is None or self._peak_frame_since_armed is None:
-            self._peak_score_since_armed = float(decision_score)
-            self._peak_frame_since_armed = int(current_frame)
-            return
-        if float(decision_score) > float(self._peak_score_since_armed) + self.new_high_epsilon:
-            self._peak_score_since_armed = float(decision_score)
-            self._peak_frame_since_armed = int(current_frame)
+        return {'decision_rule': self.decision_rule}
 
     def close(self) -> None:
         self._backend.close()
@@ -243,14 +199,10 @@ class XVLARealSwitchSession:
         self._active_stage_index = int(stage_index)
         self._can_switch = bool(can_switch)
         self._scores = []
-        self._decision_scores = []
         self._pending_trigger = None
         self._dry_run_trigger = None
         self._latest_valid_score = None
-        self._latest_decision_score = None
-        self._armed = False
-        self._reset_peak_tracker()
-        self._latest_metadata = {'switch_mode': self.mode, 'backend': 'xvla', 'latest_progress_score': None, 'latest_decision_score': None, 'progress_threshold': self.switch_threshold if self.decision_rule == 'practical_v2' else self.threshold, 'progress_consecutive_frames': self.switch_consecutive_frames if self.decision_rule == 'practical_v2' else self.consecutive_frames, 'progress_min_dwell': self.min_dwell_steps, 'progress_steps_seen': 0, 'scores_tail': [], 'decision_scores_tail': [], 'should_switch': False, 'would_switch': False, 'stage_index': int(stage_index), 'camera_key': self.camera_key, 'predictor_bundle_dir': self.bundle_dir, 'xvla_model_dir': self.xvla_model_dir, 'can_switch': self._can_switch, 'armed': False, 'peak_score_since_armed': None, 'peak_frame_since_armed': None, 'frames_since_new_peak': None, 'near_peak': False}
+        self._latest_metadata = {'switch_mode': self.mode, 'backend': 'xvla', 'latest_progress_score': None, 'latest_decision_score': None, 'progress_threshold': self.threshold, 'progress_consecutive_frames': self.consecutive_frames, 'progress_min_dwell': self.min_dwell_steps, 'progress_steps_seen': 0, 'scores_tail': [], 'should_switch': False, 'would_switch': False, 'stage_index': int(stage_index), 'camera_key': self.camera_key, 'predictor_bundle_dir': self.bundle_dir, 'xvla_model_dir': self.xvla_model_dir, 'can_switch': self._can_switch}
         self._latest_metadata.update(self._decision_config_metadata())
         event = {'event': 'predictor_reset', 'reset_reason': str(reset_reason), 'episode_step': int(episode_step), 'stage_index': int(stage_index), 'instruction': str(instruction), 'camera_key': self.camera_key, 'predictor_bundle_dir': self.bundle_dir, 'xvla_model_dir': self.xvla_model_dir, 'switch_mode': self.mode, 'backend': 'xvla', 'can_switch': self._can_switch}
         event.update(self._decision_config_metadata())
@@ -273,47 +225,18 @@ class XVLARealSwitchSession:
             if warning not in self._warnings:
                 self._warnings.append(warning)
         consecutive_above = 0
-        armed_consecutive = 0
         high_trigger_condition_met = False
-        plateau_condition_met = False
-        recent_peak_gain = None
-        peak_score_since_armed = None
-        peak_frame_since_armed = None
-        frames_since_new_peak = None
-        near_peak = False
         trigger_reason = None
         if sampled and score is not None:
             self._scores.append(score)
             self._latest_valid_score = score
-            self._update_decision_score(score)
         decision_score = self._latest_valid_score
-        if self.decision_rule == 'practical_v2':
-            decision_score = self._latest_decision_score
-            armed_consecutive = self._count_consecutive_at_or_above(self._decision_scores, self.armed_threshold)
-            if armed_consecutive >= self.armed_consecutive_frames:
-                self._armed = True
-            if self._armed and decision_score is not None:
-                self._update_peak_tracker(decision_score)
-                peak_score_since_armed = self._peak_score_since_armed
-                peak_frame_since_armed = self._peak_frame_since_armed
-                if peak_frame_since_armed is not None:
-                    frames_since_new_peak = max(len(self._decision_scores) - 1 - int(peak_frame_since_armed), 0)
-                if peak_score_since_armed is not None:
-                    near_peak = bool(float(decision_score) >= float(peak_score_since_armed) - self.new_high_epsilon)
-            consecutive_above = self._count_consecutive_at_or_above(self._decision_scores, self.switch_threshold)
-            recent_peak_gain = self._recent_peak_gain()
-            high_trigger_condition_met = consecutive_above >= self.switch_consecutive_frames
-            plateau_condition_met = bool(self._armed and decision_score is not None and (peak_score_since_armed is not None) and (float(peak_score_since_armed) >= self.plateau_threshold) and (frames_since_new_peak is not None) and (frames_since_new_peak >= max(self.plateau_window - 1, 0)) and near_peak)
-            criteria_met = sampled and score is not None and (len(self._scores) >= self.min_dwell_steps) and self._armed and plateau_condition_met
-            if criteria_met:
-                trigger_reason = 'peak_plateau'
-        else:
-            consecutive_above = self._count_consecutive_at_or_above(self._scores, self.threshold)
-            high_trigger_condition_met = consecutive_above >= self.consecutive_frames
-            criteria_met = sampled and score is not None and (len(self._scores) >= self.min_dwell_steps) and high_trigger_condition_met
-            if criteria_met:
-                trigger_reason = 'threshold'
-        metadata = {'switch_mode': self.mode, 'backend': 'xvla', 'sampled': sampled, 'backend_warning': backend_warning, 'latest_progress_score': self._latest_valid_score, 'latest_decision_score': decision_score, 'progress_threshold': self.switch_threshold if self.decision_rule == 'practical_v2' else self.threshold, 'progress_consecutive_frames': self.switch_consecutive_frames if self.decision_rule == 'practical_v2' else self.consecutive_frames, 'progress_min_dwell': self.min_dwell_steps, 'progress_steps_seen': len(self._scores), 'scores_tail': list(self._scores[-10:]), 'decision_scores_tail': list(self._decision_scores[-10:]), 'should_switch': False, 'would_switch': False, 'stage_index': self._active_stage_index, 'camera_key': self.camera_key, 'predictor_bundle_dir': self.bundle_dir, 'xvla_model_dir': self.xvla_model_dir, 'can_switch': self._can_switch, 'consecutive_above_threshold': int(consecutive_above), 'armed': bool(self._armed), 'armed_consecutive_above_threshold': int(armed_consecutive), 'high_trigger_condition_met': bool(high_trigger_condition_met), 'plateau_condition_met': bool(plateau_condition_met), 'recent_peak_gain': recent_peak_gain, 'peak_score_since_armed': peak_score_since_armed, 'peak_frame_since_armed': peak_frame_since_armed, 'frames_since_new_peak': frames_since_new_peak, 'near_peak': bool(near_peak), 'predictor_step_index': predictor_step_index, 'env_step': int(env_step)}
+        consecutive_above = self._count_consecutive_at_or_above(self._scores, self.threshold)
+        high_trigger_condition_met = consecutive_above >= self.consecutive_frames
+        criteria_met = sampled and score is not None and (len(self._scores) >= self.min_dwell_steps) and high_trigger_condition_met
+        if criteria_met:
+            trigger_reason = 'threshold'
+        metadata = {'switch_mode': self.mode, 'backend': 'xvla', 'sampled': sampled, 'backend_warning': backend_warning, 'latest_progress_score': self._latest_valid_score, 'latest_decision_score': decision_score, 'progress_threshold': self.threshold, 'progress_consecutive_frames': self.consecutive_frames, 'progress_min_dwell': self.min_dwell_steps, 'progress_steps_seen': len(self._scores), 'scores_tail': list(self._scores[-10:]), 'should_switch': False, 'would_switch': False, 'stage_index': self._active_stage_index, 'camera_key': self.camera_key, 'predictor_bundle_dir': self.bundle_dir, 'xvla_model_dir': self.xvla_model_dir, 'can_switch': self._can_switch, 'consecutive_above_threshold': int(consecutive_above), 'high_trigger_condition_met': bool(high_trigger_condition_met), 'predictor_step_index': predictor_step_index, 'env_step': int(env_step)}
         metadata.update(self._decision_config_metadata())
         metadata.update({k: v for k, v in backend_metadata.items() if k not in metadata})
         if criteria_met and self._can_switch and (score is not None):
@@ -328,7 +251,7 @@ class XVLARealSwitchSession:
                 self._trigger_events.append(dict(trigger_payload))
             metadata.update(trigger_payload)
         self._latest_metadata = dict(metadata)
-        self._score_trace.append({'env_step': int(env_step), 'predictor_step_index': predictor_step_index, 'stage_index': self._active_stage_index, 'backend': 'xvla', 'sampled': sampled, 'score': score, 'decision_score': decision_score, 'backend_warning': backend_warning, 'threshold': self.switch_threshold if self.decision_rule == 'practical_v2' else self.threshold, 'consecutive_above_threshold': int(consecutive_above), 'armed': bool(self._armed), 'armed_consecutive_above_threshold': int(armed_consecutive), 'high_trigger_condition_met': bool(high_trigger_condition_met), 'plateau_condition_met': bool(plateau_condition_met), 'recent_peak_gain': recent_peak_gain, 'peak_score_since_armed': peak_score_since_armed, 'peak_frame_since_armed': peak_frame_since_armed, 'frames_since_new_peak': frames_since_new_peak, 'near_peak': bool(near_peak), 'trigger_reason': trigger_reason, 'would_switch': bool(metadata['would_switch']), 'should_switch': bool(metadata['should_switch']), 'switch_mode': self.mode, 'decision_rule': self.decision_rule, 'camera_key': self.camera_key, 'predictor_bundle_dir': self.bundle_dir, 'xvla_model_dir': self.xvla_model_dir})
+        self._score_trace.append({'env_step': int(env_step), 'predictor_step_index': predictor_step_index, 'stage_index': self._active_stage_index, 'backend': 'xvla', 'sampled': sampled, 'score': score, 'decision_score': decision_score, 'backend_warning': backend_warning, 'threshold': self.threshold, 'consecutive_above_threshold': int(consecutive_above), 'high_trigger_condition_met': bool(high_trigger_condition_met), 'trigger_reason': trigger_reason, 'would_switch': bool(metadata['would_switch']), 'should_switch': bool(metadata['should_switch']), 'switch_mode': self.mode, 'decision_rule': self.decision_rule, 'camera_key': self.camera_key, 'predictor_bundle_dir': self.bundle_dir, 'xvla_model_dir': self.xvla_model_dir})
         return dict(metadata)
 
     def maybe_switch(self) -> dict[str, Any]:
@@ -339,4 +262,4 @@ class XVLARealSwitchSession:
         return dict(self._latest_metadata)
 
     def export_payload(self) -> dict[str, Any]:
-        return {'real_switch': {'backend': 'xvla', 'mode': self.mode, 'camera_key': self.camera_key, 'predictor_bundle_dir': self.bundle_dir, 'xvla_model_dir': self.xvla_model_dir, 'decision_rule': self.decision_rule, 'threshold': self.threshold, 'consecutive_frames': self.consecutive_frames, 'min_dwell_steps': self.min_dwell_steps, 'score_log_interval': self.score_log_interval, 'ema_alpha': self.ema_alpha, 'armed_threshold': self.armed_threshold, 'armed_consecutive_frames': self.armed_consecutive_frames, 'switch_threshold': self.switch_threshold, 'switch_consecutive_frames': self.switch_consecutive_frames, 'plateau_threshold': self.plateau_threshold, 'plateau_window': self.plateau_window, 'new_high_epsilon': self.new_high_epsilon, 'device': self.device}, 'score_trace': list(self._score_trace), 'trigger_events': list(self._trigger_events), 'predictor_reset_events': list(self._predictor_reset_events), 'warnings': list(self._warnings), 'latest_metadata': dict(self._latest_metadata)}
+        return {'real_switch': {'backend': 'xvla', 'mode': self.mode, 'camera_key': self.camera_key, 'predictor_bundle_dir': self.bundle_dir, 'xvla_model_dir': self.xvla_model_dir, 'decision_rule': self.decision_rule, 'threshold': self.threshold, 'consecutive_frames': self.consecutive_frames, 'min_dwell_steps': self.min_dwell_steps, 'score_log_interval': self.score_log_interval, 'device': self.device}, 'score_trace': list(self._score_trace), 'trigger_events': list(self._trigger_events), 'predictor_reset_events': list(self._predictor_reset_events), 'warnings': list(self._warnings), 'latest_metadata': dict(self._latest_metadata)}

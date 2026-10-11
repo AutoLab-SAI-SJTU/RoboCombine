@@ -12,7 +12,7 @@ locations.
 ## Environment
 
 `Motus` should not be merged into the shared `RoboCombine` root environment.
-The recommended setup is to reuse the validated evaluation Python from the
+The recommended setup is to use a dedicated evaluation Python from the
 runtime root that owns the `Motus` stack:
 
 ```text
@@ -22,8 +22,7 @@ runtime root that owns the `Motus` stack:
 `RoboCombine` only consumes that Python executable. It does not duplicate the
 `Motus` runtime in-repo and does not commit any local `.venv`.
 
-This interpreter path has already been used to complete both `smoke` and `10ep`
-validation. The validated interpreter is `Python 3.10`.
+Use `Python 3.10` for the Motus runtime.
 
 If you do not already have this environment, create a dedicated `uv` venv and
 install the `Motus` dependencies:
@@ -122,15 +121,9 @@ Stop the run:
 kill "$(cat handoff_eval_logs/robocombine_motus.pid)"
 ```
 
-## Verified Coverage
+## Runtime Contract Tests
 
-Validated coverage:
-
-- `1ep smoke`
-  - `full_inst`
-  - `oracle_hse`
-  - `ordered_hse`
-- `breakfast_prep_2tasks` (`cup-bread`) `10ep`
-  - `full_inst`
-  - `oracle_hse`
-  - `ordered_hse`
+From the repository root, run `python -m pytest tests` with NumPy, PyYAML,
+PyTorch, Pillow, and pytest installed. The tests exercise language handoffs and
+both `clear_cache` settings using fake inference backends. They do not replace
+GPU inference or simulator evaluation with model checkpoints.

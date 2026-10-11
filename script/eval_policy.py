@@ -359,8 +359,6 @@ def build_episode_base_record(
         "switch_step": first_switch.get("switch_step") if first_switch else None,
         "s1_completed": bool(subtask_completed[0]) if len(subtask_completed) > 0 else False,
         "s2_completed": bool(subtask_completed[1]) if len(subtask_completed) > 1 else False,
-        "forcing_enabled": first_switch.get("forcing_enabled", switch_defaults.get("forcing_enabled", False)) if first_switch else switch_defaults.get("forcing_enabled", False),
-        "cfg_enabled": first_switch.get("cfg_enabled", switch_defaults.get("cfg_enabled", False)) if first_switch else switch_defaults.get("cfg_enabled", False),
         "gripper_check_mode": gripper_status["gripper_check_mode"],
         "switch_events": episode_switch_events,
         "gripper_status": gripper_status,
@@ -546,14 +544,6 @@ def _build_real_switch_session(args, hse_variant):
         consecutive_frames=args.get("real_consecutive_frames", 3),
         min_dwell_steps=args.get("real_min_dwell_steps", 5),
         score_log_interval=args.get("real_score_log_interval", 10),
-        ema_alpha=args.get("real_ema_alpha", 0.4),
-        armed_threshold=args.get("real_armed_threshold", 0.82),
-        armed_consecutive_frames=args.get("real_armed_consecutive_frames", 3),
-        switch_threshold=args.get("real_switch_threshold", 0.9),
-        switch_consecutive_frames=args.get("real_switch_consecutive_frames", 3),
-        plateau_threshold=args.get("real_plateau_threshold", 0.86),
-        plateau_window=args.get("real_plateau_window", 8),
-        new_high_epsilon=args.get("real_new_high_epsilon", 0.005),
         device=args.get("real_device", "auto"),
     )
 
@@ -638,18 +628,6 @@ def main(usr_args):
         "real_consecutive_frames",
         "real_min_dwell_steps",
         "real_score_log_interval",
-        "real_ema_alpha",
-        "real_armed_threshold",
-        "real_armed_consecutive_frames",
-        "real_switch_threshold",
-        "real_switch_consecutive_frames",
-        "real_plateau_threshold",
-        "real_plateau_window",
-        "real_new_high_epsilon",
-        "forcing_mode",
-        "forcing_steps",
-        "cfg_mode",
-        "guidance_scale",
     ]:
         if key in usr_args and usr_args.get(key) not in (None, ""):
             args[key] = usr_args[key]
@@ -1028,27 +1006,15 @@ def parse_args_and_config():
     parser.add_argument("--real_predictor_bundle_dir", type=str, default="")
     parser.add_argument("--real_xvla_model_dir", type=str, default="")
     parser.add_argument("--real_camera_key", type=str, default="head_camera")
-    parser.add_argument("--real_decision_rule", type=str, default="threshold", choices=["threshold", "practical_v2"])
+    parser.add_argument("--real_decision_rule", type=str, default="threshold", choices=["threshold"])
     parser.add_argument("--real_switch_mode", type=str, default="live", choices=["live", "dry_run"])
     parser.add_argument("--real_device", type=str, default="auto")
     parser.add_argument("--real_threshold", type=float, default=0.8)
     parser.add_argument("--real_consecutive_frames", type=int, default=3)
     parser.add_argument("--real_min_dwell_steps", type=int, default=5)
     parser.add_argument("--real_score_log_interval", type=int, default=10)
-    parser.add_argument("--real_ema_alpha", type=float, default=0.4)
-    parser.add_argument("--real_armed_threshold", type=float, default=0.82)
-    parser.add_argument("--real_armed_consecutive_frames", type=int, default=3)
-    parser.add_argument("--real_switch_threshold", type=float, default=0.9)
-    parser.add_argument("--real_switch_consecutive_frames", type=int, default=3)
-    parser.add_argument("--real_plateau_threshold", type=float, default=0.86)
-    parser.add_argument("--real_plateau_window", type=int, default=8)
-    parser.add_argument("--real_new_high_epsilon", type=float, default=0.005)
     parser.add_argument("--max_steps_per_episode", type=int, default=None)
     parser.add_argument("--clear_cache", type=parse_clear_cache, default=None)
-    parser.add_argument("--forcing_mode", action="store_true")
-    parser.add_argument("--forcing_steps", type=int, default=1)
-    parser.add_argument("--cfg_mode", action="store_true")
-    parser.add_argument("--guidance_scale", type=float, default=2.0)
     args = parser.parse_args()
     with open(args.config, "r", encoding="utf-8") as handle:
         config = yaml.safe_load(handle)
@@ -1092,20 +1058,8 @@ def parse_args_and_config():
     set_arg_default("real_consecutive_frames", args.real_consecutive_frames)
     set_arg_default("real_min_dwell_steps", args.real_min_dwell_steps)
     set_arg_default("real_score_log_interval", args.real_score_log_interval)
-    set_arg_default("real_ema_alpha", args.real_ema_alpha)
-    set_arg_default("real_armed_threshold", args.real_armed_threshold)
-    set_arg_default("real_armed_consecutive_frames", args.real_armed_consecutive_frames)
-    set_arg_default("real_switch_threshold", args.real_switch_threshold)
-    set_arg_default("real_switch_consecutive_frames", args.real_switch_consecutive_frames)
-    set_arg_default("real_plateau_threshold", args.real_plateau_threshold)
-    set_arg_default("real_plateau_window", args.real_plateau_window)
-    set_arg_default("real_new_high_epsilon", args.real_new_high_epsilon)
     if args.max_steps_per_episode is not None:
         config["max_steps_per_episode"] = args.max_steps_per_episode
-    config["forcing_mode"] = args.forcing_mode
-    config["forcing_steps"] = args.forcing_steps
-    config["cfg_mode"] = args.cfg_mode
-    config["guidance_scale"] = args.guidance_scale
     return config
 
 

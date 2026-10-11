@@ -30,15 +30,5 @@ def reset_model(model):
     model.reset_obsrvationwindows()
 
 
-def prepare_instruction_switch(
-    model,
-    clear_action_cache: bool = True,
-    enable_forcing: bool = False,
-    forcing_steps: int = 1,
-    enable_cfg: bool = False,
-    guidance_scale: float = 2.0,
-):
-    return model.prepare_instruction_switch(
-        clear_action_cache=clear_action_cache, enable_forcing=enable_forcing,
-        forcing_steps=forcing_steps, enable_cfg=enable_cfg, guidance_scale=guidance_scale,
-    )
+def prepare_instruction_switch(model, clear_action_cache: bool = True):
+    return model.prepare_instruction_switch(clear_action_cache=clear_action_cache)

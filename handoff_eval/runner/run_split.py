@@ -55,7 +55,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--clear-cache', choices=['true', 'false'], default='true', help='Discard remaining chunk actions on handoff; false drains the chunk first')
     parser.add_argument('--motus-wan-dir', default=None, help='Path to external WAN runtime assets required by Motus')
     parser.add_argument('--motus-vlm-dir', default=None, help='Path to external VLM/tokenizer directory required by Motus')
-    parser.add_argument('--ordered-hse-profile', dest='ordered_hse_profile', choices=['threshold', 'practical_v2'], default='threshold')
+    parser.add_argument('--ordered-hse-profile', dest='ordered_hse_profile', choices=['threshold'], default='threshold')
     parser.add_argument('--real-predictor-bundle-dir', default=None, help='Path to standalone XVLA predictor bundle')
     parser.add_argument('--real-xvla-model-dir', default=None, help='Path to downloaded X-VLA-RoboTwin2 backbone directory')
     parser.add_argument('--real-camera-key', default='head_camera')
@@ -65,14 +65,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--real-consecutive-frames', type=int, default=3, help='Threshold rule: consecutive-frame trigger count')
     parser.add_argument('--real-min-dwell-steps', type=int, default=5)
     parser.add_argument('--real-score-log-interval', type=int, default=10)
-    parser.add_argument('--real-ema-alpha', type=float, default=0.4)
-    parser.add_argument('--real-armed-threshold', type=float, default=0.82)
-    parser.add_argument('--real-armed-consecutive-frames', type=int, default=3)
-    parser.add_argument('--real-switch-threshold', type=float, default=0.9)
-    parser.add_argument('--real-switch-consecutive-frames', type=int, default=3)
-    parser.add_argument('--real-plateau-threshold', type=float, default=0.86)
-    parser.add_argument('--real-plateau-window', type=int, default=8)
-    parser.add_argument('--real-new-high-epsilon', type=float, default=0.005)
     return parser.parse_args()
 
 def resolve_output_root(output_root: str) -> Path:
@@ -169,10 +161,7 @@ def build_eval_command(*, args: argparse.Namespace, spec: dict[str, Any], task: 
             overrides.extend(['--real_predictor_bundle_dir', str(resolve_checkpoint(args.real_predictor_bundle_dir))])
         if args.real_xvla_model_dir:
             overrides.extend(['--real_xvla_model_dir', str(resolve_checkpoint(args.real_xvla_model_dir))])
-        if args.ordered_hse_profile == 'threshold':
-            overrides.extend(['--real_threshold', str(args.real_threshold), '--real_consecutive_frames', str(args.real_consecutive_frames)])
-        else:
-            overrides.extend(['--real_ema_alpha', str(args.real_ema_alpha), '--real_armed_threshold', str(args.real_armed_threshold), '--real_armed_consecutive_frames', str(args.real_armed_consecutive_frames), '--real_switch_threshold', str(args.real_switch_threshold), '--real_switch_consecutive_frames', str(args.real_switch_consecutive_frames), '--real_plateau_threshold', str(args.real_plateau_threshold), '--real_plateau_window', str(args.real_plateau_window), '--real_new_high_epsilon', str(args.real_new_high_epsilon)])
+        overrides.extend(['--real_threshold', str(args.real_threshold), '--real_consecutive_frames', str(args.real_consecutive_frames)])
     if policy == 'Motus':
         wan_dir = getattr(args, 'motus_wan_dir', None) or os.environ.get('ROBOCOMBINE_MOTUS_WAN_DIR')
         vlm_dir = getattr(args, 'motus_vlm_dir', None) or os.environ.get('ROBOCOMBINE_MOTUS_VLM_DIR')
@@ -230,7 +219,7 @@ def main() -> int:
     records: list[TaskRunRecord] = []
     for task in tasks:
         records.append(run_single_task(args=args, spec=spec, task=task, checkpoint_path=checkpoint_path, checkpoint_label=checkpoint_label, run_root=run_root, used_seed_root=used_seed_root))
-    manifest = {'spec': args.spec, 'track': args.track, 'track_tag': track_tag, 'policy': args.policy, 'checkpoint': str(checkpoint_path), 'checkpoint_label': checkpoint_label, 'repo_root': str(REPO_ROOT), 'run_root': str(run_root), 'task_count': len(records), 'max_steps_per_episode': resolve_max_steps_per_episode(args, spec), 'ordered_hse_profile': args.ordered_hse_profile if args.track == 'ordered_hse' else None, 'ordered_hse': {'profile': args.ordered_hse_profile, 'backend': 'xvla', 'predictor_bundle_dir': str(resolve_checkpoint(args.real_predictor_bundle_dir)) if args.real_predictor_bundle_dir else None, 'xvla_model_dir': str(resolve_checkpoint(args.real_xvla_model_dir)) if args.real_xvla_model_dir else None, 'camera_key': args.real_camera_key, 'device': args.real_device, 'switch_mode': args.real_switch_mode, 'min_dwell_steps': args.real_min_dwell_steps, 'score_log_interval': args.real_score_log_interval, 'threshold': args.real_threshold if args.ordered_hse_profile == 'threshold' else None, 'consecutive_frames': args.real_consecutive_frames if args.ordered_hse_profile == 'threshold' else None, 'ema_alpha': args.real_ema_alpha if args.ordered_hse_profile == 'practical_v2' else None, 'armed_threshold': args.real_armed_threshold if args.ordered_hse_profile == 'practical_v2' else None, 'armed_consecutive_frames': args.real_armed_consecutive_frames if args.ordered_hse_profile == 'practical_v2' else None, 'switch_threshold': args.real_switch_threshold if args.ordered_hse_profile == 'practical_v2' else None, 'switch_consecutive_frames': args.real_switch_consecutive_frames if args.ordered_hse_profile == 'practical_v2' else None, 'plateau_threshold': args.real_plateau_threshold if args.ordered_hse_profile == 'practical_v2' else None, 'plateau_window': args.real_plateau_window if args.ordered_hse_profile == 'practical_v2' else None, 'new_high_epsilon': args.real_new_high_epsilon if args.ordered_hse_profile == 'practical_v2' else None} if args.track == 'ordered_hse' else None, 'records': [{'task_name': record.task_name, 'stage_count': record.stage_count, 'result_dir': record.result_dir, 'log_path': record.log_path, 'command_path': record.command_path, 'command': record.command, 'exit_code': record.exit_code, 'stats_path': record.stats_path, 'seed_receipt': record.seed_receipt, 'used_seed_receipt': record.used_seed_receipt} for record in records]}
+    manifest = {'spec': args.spec, 'track': args.track, 'track_tag': track_tag, 'policy': args.policy, 'checkpoint': str(checkpoint_path), 'checkpoint_label': checkpoint_label, 'repo_root': str(REPO_ROOT), 'run_root': str(run_root), 'task_count': len(records), 'max_steps_per_episode': resolve_max_steps_per_episode(args, spec), 'ordered_hse_profile': args.ordered_hse_profile if args.track == 'ordered_hse' else None, 'ordered_hse': {'profile': args.ordered_hse_profile, 'backend': 'xvla', 'predictor_bundle_dir': str(resolve_checkpoint(args.real_predictor_bundle_dir)) if args.real_predictor_bundle_dir else None, 'xvla_model_dir': str(resolve_checkpoint(args.real_xvla_model_dir)) if args.real_xvla_model_dir else None, 'camera_key': args.real_camera_key, 'device': args.real_device, 'switch_mode': args.real_switch_mode, 'min_dwell_steps': args.real_min_dwell_steps, 'score_log_interval': args.real_score_log_interval, 'threshold': args.real_threshold if args.ordered_hse_profile == 'threshold' else None, 'consecutive_frames': args.real_consecutive_frames if args.ordered_hse_profile == 'threshold' else None} if args.track == 'ordered_hse' else None, 'records': [{'task_name': record.task_name, 'stage_count': record.stage_count, 'result_dir': record.result_dir, 'log_path': record.log_path, 'command_path': record.command_path, 'command': record.command, 'exit_code': record.exit_code, 'stats_path': record.stats_path, 'seed_receipt': record.seed_receipt, 'used_seed_receipt': record.used_seed_receipt} for record in records]}
     manifest_path = run_root / 'run_manifest.json'
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
     summary_cmd = [sys.executable, 'handoff_eval/summary/summarize_split.py', '--spec', args.spec, '--run-dir', str(run_root)]

@@ -18,23 +18,21 @@ Replace each `/path/to/...` value with your actual runtime location:
 - `pi05` Python: `/path/to/pi05/python3.11`
 - simulator assets: `/path/to/simulator/assets`
 
-Do not copy machine-specific local paths into the public docs.
-
 Recommended Runtime Contract
 ----------------------------
 
 - `Motus`
   - reuse the dedicated evaluation environment on the `Motus` side
-  - validated interpreter version: `/path/to/motus/python` (`Python 3.10`)
+  - Python executable: `/path/to/motus/python` (`Python 3.10`)
 - `pi05`
   - reuse the dedicated `uv` environment under your `pi05` runtime root
-  - validated interpreter version: `/path/to/pi05/python3.11` (`Python 3.11`)
+  - Python executable: `/path/to/pi05/python3.11` (`Python 3.11`)
   - `pyproject.toml` / `uv.lock` live under `/path/to/pi05/runtime/root`
 
 pi05 Environment
 ----------------
 
-`pi05` should reuse the validated `uv` environment under
+`pi05` should use a dedicated `uv` environment under
 the runtime root that owns the `OpenPI/pi05` stack instead of creating a second
 environment under the `RoboCombine` root:
 
@@ -61,14 +59,14 @@ Why this is necessary:
 Motus Environment
 -----------------
 
-`Motus` should reuse the validated evaluation environment that owns the
+`Motus` should use a dedicated evaluation environment that owns the
 `Motus` runtime stack:
 
 ```text
 /path/to/motus/python
 ```
 
-That validated interpreter is `Python 3.10`.
+Use `Python 3.10`.
 
 If you need to build the environment from scratch, create a dedicated `uv`
 environment and install the `Motus` requirements:

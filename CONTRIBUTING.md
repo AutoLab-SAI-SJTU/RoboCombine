@@ -5,15 +5,9 @@ protocol and keep generated artifacts out of the source repository.
 
 ## Development Setup
 
-`pi05` and the shared runner use the local `uv` environment:
-
-```bash
-uv venv --python 3.10
-uv pip install -e .
-```
-
-`Motus` uses a separate runtime. See [docs/runtime_envs.md](docs/runtime_envs.md)
-for the validated environment layout.
+Use the separate policy environments described in
+[docs/runtime_envs.md](docs/runtime_envs.md): Python 3.10 for Motus and
+Python 3.11 for pi05.
 
 Runtime simulator assets, model checkpoints, WAN/VLM directories, and optional
 progress-predictor bundles are external dependencies and must remain outside Git.
@@ -23,7 +17,7 @@ progress-predictor bundles are external dependencies and must remain outside Git
 Before proposing changes, run:
 
 ```bash
-uv run pytest
+python -m pytest tests
 ```
 
 If your change touches evaluation routing, also run a one-episode smoke test for:
@@ -43,9 +37,6 @@ uv build --sdist
 - Keep protocol changes explicit in `handoff_eval/specs/robocombine.json`.
 - Update `README.md`, `policy/*.md`, and public `docs/*.md` when release-facing
   behavior changes.
-- Keep historical timelines, local test notes, and one-off release drafts under
-  `docs-private/` or `metadata-private/`; they are local-only and should not be
-  committed.
 - Do not commit local logs, generated runs, checkpoints, videos, HDF5 files, or
   machine-specific symlinks.
 - Prefer small, reviewable changes with focused tests.

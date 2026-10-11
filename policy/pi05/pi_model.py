@@ -48,15 +48,14 @@ class PI0:
         assert self.observation_window is not None, 'update observation_window first!'
         return self.policy.infer(self.observation_window)['actions']
 
-    def prepare_instruction_switch(self, clear_action_cache=True, **kwargs):
+    def prepare_instruction_switch(self, clear_action_cache=True):
         cache_len = len(self.action_cache)
         if clear_action_cache:
             self.action_cache.clear()
         self.instruction = None
         self.observation_window = None
         return {"cache_len_before_switch": cache_len,
-                "cache_cleared": bool(clear_action_cache),
-                "forcing_requested": False, "forcing_enabled": False, "cfg_enabled": False}
+                "cache_cleared": bool(clear_action_cache)}
 
     def reset_obsrvationwindows(self):
         self.action_cache.clear()
