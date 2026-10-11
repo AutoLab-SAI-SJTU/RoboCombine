@@ -4,6 +4,16 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
+def parse_clear_cache(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if str(value).lower() in {"true", "1"}:
+        return True
+    if str(value).lower() in {"false", "0"}:
+        return False
+    raise ValueError(f"Invalid clear_cache value: {value!r}")
+
+
 HSEVariant = str
 FULL_INST = "full_inst"
 ORACLE_HSE = "oracle_hse"
@@ -21,7 +31,7 @@ class InstructionSwitchConfig:
     @classmethod
     def from_args(cls, args: dict[str, Any]) -> "InstructionSwitchConfig":
         return cls(
-            clear_action_cache=True,
+            clear_action_cache=parse_clear_cache(args.get("clear_cache", True)),
             enable_forcing=bool(args.get("forcing_mode", False)),
             forcing_steps=max(1, int(args.get("forcing_steps", 1) or 1)),
             enable_cfg=bool(args.get("cfg_mode", False)),
@@ -59,7 +69,7 @@ def apply_instruction_switch(
             guidance_scale=config.guidance_scale,
         )
     else:
-        switch_info = {}
+        raise TypeError("Policy must implement prepare_instruction_switch")
     switch_info = dict(switch_info or {})
     switch_info.setdefault("cache_cleared", bool(config.clear_action_cache))
     switch_info.setdefault("forcing_requested", bool(config.enable_forcing))
@@ -75,6 +85,7 @@ class HSEEpisodeState:
     stage_count: int
     switch_events: list[dict[str, Any]] = field(default_factory=list)
     predictor_switch_steps: list[int | None] = field(default_factory=list)
+    pending_switch: dict[str, Any] | None = None
 
     @classmethod
     def create(cls, stage_count: int) -> "HSEEpisodeState":
@@ -144,6 +155,13 @@ class HSEController:
     ) -> dict[str, Any] | None:
         if state.current_stage_idx >= state.stage_count - 1:
             return None
+        if not self.switch_config.clear_action_cache and len(getattr(model, "action_cache", ())):
+            if state.pending_switch is None:
+                state.pending_switch = dict(
+                    source=source, extra_event={"cue_step": int(step_count), **(extra_event or {})},
+                    predictor_reset_reason=predictor_reset_reason,
+                )
+            return None
         from_stage_idx = state.current_stage_idx
         to_stage_idx = from_stage_idx + 1
         new_instruction = self.stage_instructions[to_stage_idx]
@@ -177,6 +195,15 @@ class HSEController:
         state.switch_events.append(event)
         return event
 
+    def flush_pending_switch(self, *, env, model, state, step_count):
+        if state.pending_switch is None or len(getattr(model, "action_cache", ())):
+            return None
+        pending = state.pending_switch
+        state.pending_switch = None
+        return self._switch_to_next_stage(
+            env=env, model=model, state=state, step_count=step_count, **pending
+        )
+
     def handle_oracle_hse(
         self,
         *,
@@ -209,6 +236,8 @@ class HSEController:
         step_count: int,
     ) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
         if self.variant != ORDERED_HSE or self.real_switch_session is None:
+            return (None, None)
+        if state.pending_switch is not None:
             return (None, None)
         metadata = self.real_switch_session.observe(observation, env_step=step_count)
         if not metadata.get("should_switch", False):

@@ -52,6 +52,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--pi05-model-name', default='custom_checkpoint')
     parser.add_argument('--pi05-checkpoint-id', type=int, default=0)
     parser.add_argument('--pi05-step', type=int, default=50)
+    parser.add_argument('--clear-cache', choices=['true', 'false'], default='true', help='Discard remaining chunk actions on handoff; false drains the chunk first')
     parser.add_argument('--motus-wan-dir', default=None, help='Path to external WAN runtime assets required by Motus')
     parser.add_argument('--motus-vlm-dir', default=None, help='Path to external VLM/tokenizer directory required by Motus')
     parser.add_argument('--ordered-hse-profile', dest='ordered_hse_profile', choices=['threshold', 'practical_v2'], default='threshold')
@@ -152,6 +153,7 @@ def build_eval_command(*, args: argparse.Namespace, spec: dict[str, Any], task: 
     task_config = args.task_config or spec.get('default_task_config', 'robocombine_eval')
     episodes = int(args.episodes or spec.get('default_episodes', 5))
     overrides: list[str] = ['--task_name', task['task_name'], '--task_config', task_config, '--policy_name', policy_name, '--seed', str(args.base_seed), '--episode_num', str(episodes), '--ckpt_setting', str(checkpoint_path), '--ckpt_setting_label', checkpoint_label, '--save_dir', str(task_dir), '--log_dir', str(task_dir), '--hse_variant', str(args.track)]
+    overrides.extend(['--clear_cache', str(getattr(args, 'clear_cache', 'true'))])
     if args.save_video:
         overrides.extend(['--eval_video_log', 'True'])
     max_steps = resolve_max_steps_per_episode(args, spec)

@@ -62,16 +62,15 @@ class HSEScopeTest(unittest.TestCase):
         self.assertNotIn("--real_instruction_mode", command)
         self.assertNotIn("--real_predictor_lib_path", command)
         self.assertIn("--wan_path", command)
-        self.assertIn("/tmp/fake_wan", command)
+        self.assertIn(str(run_split.resolve_checkpoint("/tmp/fake_wan")), command)
         self.assertIn("--vlm_path", command)
-        self.assertIn("/tmp/fake_vlm", command)
+        self.assertIn(str(run_split.resolve_checkpoint("/tmp/fake_vlm")), command)
 
     def test_pi05_prepare_instruction_switch_exists(self):
         source = Path("policy/pi05/deploy_policy.py").read_text(encoding="utf-8")
         self.assertIn("def prepare_instruction_switch(", source)
-        self.assertIn("model.reset_obsrvationwindows()", source)
-        self.assertIn('"cache_cleared": True', source)
-        self.assertIn('"cfg_enabled": False', source)
+        self.assertIn("model.prepare_instruction_switch(", source)
+        self.assertIn("clear_action_cache=clear_action_cache", source)
 
 
 if __name__ == "__main__":

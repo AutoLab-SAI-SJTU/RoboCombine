@@ -1,3 +1,4 @@
+from collections import deque
 import numpy as np
 from openpi.policies import policy_config as _policy_config
 from openpi.training import config as _config
@@ -27,6 +28,7 @@ class PI0:
         self.img_size = (224, 224)
         self.observation_window = None
         self.pi0_step = pi0_step
+        self.action_cache = deque()
 
     def set_img_size(self, img_size):
         self.img_size = img_size
@@ -46,7 +48,18 @@ class PI0:
         assert self.observation_window is not None, 'update observation_window first!'
         return self.policy.infer(self.observation_window)['actions']
 
+    def prepare_instruction_switch(self, clear_action_cache=True, **kwargs):
+        cache_len = len(self.action_cache)
+        if clear_action_cache:
+            self.action_cache.clear()
+        self.instruction = None
+        self.observation_window = None
+        return {"cache_len_before_switch": cache_len,
+                "cache_cleared": bool(clear_action_cache),
+                "forcing_requested": False, "forcing_enabled": False, "cfg_enabled": False}
+
     def reset_obsrvationwindows(self):
+        self.action_cache.clear()
         self.instruction = None
         self.observation_window = None
         print('successfully unset obs and language intruction')

@@ -18,17 +18,13 @@ def get_model(usr_args):
     return PI0(train_config_name, model_name, checkpoint_id, pi0_step, custom_ckpt_path=custom_ckpt_path)
 
 def eval(TASK_ENV, model, observation):
-    if model.observation_window is None:
-        instruction = TASK_ENV.get_instruction()
-        model.set_language(instruction)
-    input_rgb_arr, input_state = encode_obs(observation)
-    model.update_observation_window(input_rgb_arr, input_state)
-    actions = model.get_action()[:model.pi0_step]
-    for action in actions:
-        TASK_ENV.take_action(action)
-        observation = TASK_ENV.get_obs()
+    if not model.action_cache:
+        model.set_language(TASK_ENV.get_instruction())
         input_rgb_arr, input_state = encode_obs(observation)
         model.update_observation_window(input_rgb_arr, input_state)
+        model.action_cache.extend(model.get_action()[:model.pi0_step])
+    TASK_ENV.take_action(model.action_cache.popleft())
+
 
 def reset_model(model):
     model.reset_obsrvationwindows()
@@ -42,15 +38,7 @@ def prepare_instruction_switch(
     enable_cfg: bool = False,
     guidance_scale: float = 2.0,
 ):
-    del clear_action_cache, enable_forcing, forcing_steps, enable_cfg, guidance_scale
-    had_instruction = getattr(model, "instruction", None) is not None
-    model.reset_obsrvationwindows()
-    return {
-        "cache_len_before_switch": 0,
-        "prev_action_available": bool(had_instruction),
-        "cache_cleared": True,
-        "forcing_requested": False,
-        "forcing_enabled": False,
-        "cfg_enabled": False,
-        "guidance_scale": None,
-    }
+    return model.prepare_instruction_switch(
+        clear_action_cache=clear_action_cache, enable_forcing=enable_forcing,
+        forcing_steps=forcing_steps, enable_cfg=enable_cfg, guidance_scale=guidance_scale,
+    )

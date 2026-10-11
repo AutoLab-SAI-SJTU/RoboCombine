@@ -22,6 +22,7 @@ sys.path.append("./description/utils")
 from envs import CONFIGS_PATH
 from envs.utils.create_actor import UnStableError
 from generate_episode_instructions import generate_episode_descriptions
+from handoff_eval.hse import parse_clear_cache
 from handoff_eval.hse import FULL_INST
 from handoff_eval.hse import HSEController
 from handoff_eval.hse import InstructionSwitchConfig
@@ -626,6 +627,7 @@ def main(usr_args):
         "max_steps_per_episode",
         "gripper_check_mode",
         "hse_variant",
+        "clear_cache",
         "real_predictor_bundle_dir",
         "real_xvla_model_dir",
         "real_camera_key",
@@ -888,14 +890,14 @@ def eval_policy(
             step_start = time.time()
             observation = task_env.get_obs()
             eval_func(task_env, model, observation)
-            step_count += 1
+            step_count = task_env.take_action_cnt
             if hse_variant == ORDERED_HSE:
                 try:
                     real_switch_metadata, switch_event = controller.observe_real_switch(
                         env=task_env,
                         model=model,
                         state=episode_state,
-                        observation=observation,
+                        observation=task_env.get_obs(),
                         step_count=step_count,
                     )
                     if switch_event is not None:
@@ -927,6 +929,9 @@ def eval_policy(
                                     f"Oracle HSE -> stage {switch_event['to_subtask_idx'] + 1} at step {step_count}",
                                     flush=True,
                                 )
+            controller.flush_pending_switch(
+                env=task_env, model=model, state=episode_state, step_count=step_count,
+            )
             if step_count % 10 == 0:
                 current_instruction = task_env.get_instruction() if hasattr(task_env, "get_instruction") else initial_instruction
                 print(f"[Step {step_count}] Instruction={current_instruction!r} step_time={time.time() - step_start:.2f}s", flush=True)
@@ -1039,6 +1044,7 @@ def parse_args_and_config():
     parser.add_argument("--real_plateau_window", type=int, default=8)
     parser.add_argument("--real_new_high_epsilon", type=float, default=0.005)
     parser.add_argument("--max_steps_per_episode", type=int, default=None)
+    parser.add_argument("--clear_cache", type=parse_clear_cache, default=None)
     parser.add_argument("--forcing_mode", action="store_true")
     parser.add_argument("--forcing_steps", type=int, default=1)
     parser.add_argument("--cfg_mode", action="store_true")
@@ -1075,6 +1081,7 @@ def parse_args_and_config():
             config[key] = value
 
     set_arg_default("hse_variant", args.hse_variant)
+    set_arg_default("clear_cache", args.clear_cache if args.clear_cache is not None else config.get("clear_cache", True))
     set_arg_default("real_predictor_bundle_dir", args.real_predictor_bundle_dir)
     set_arg_default("real_xvla_model_dir", args.real_xvla_model_dir)
     set_arg_default("real_camera_key", args.real_camera_key)

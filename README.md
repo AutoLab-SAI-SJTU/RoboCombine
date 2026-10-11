@@ -269,6 +269,26 @@ kill "$(cat handoff_eval_logs/robocombine_pi05_oracle_hse.pid)"
 
 </details>
 
+### Language switching and action chunks
+
+Both adapters pass the active atomic instruction to their next policy inference.
+Use `--clear-cache true` (default) with `run_split.py` to discard remaining actions
+when a handoff cue fires, or `--clear-cache false` to latch the cue and finish the
+current execution chunk before switching. The direct `script/eval_policy.py`
+option is `--clear_cache true|false`; YAML accepts `clear_cache: false` as well.
+For the paper's chunk-preserving setting, select `--clear-cache false` explicitly.
+
+Oracle and predictor cues are checked after each executed action. Ordered-HSE
+uses the fresh post-action observation; a deferred switch resets the predictor
+only when the next instruction becomes active. For pi05, the execution chunk is
+the first `--pi05-step` actions returned by the policy (as in the existing adapter).
+
+`tests/test_language_switch_runtime.py` exercises both real adapters and the
+runtime controller without GPU checkpoints. It captures the pi05 inference
+`prompt` and Motus text-encoder input, checking both cache settings, oracle and
+predicted handoffs, chunk boundaries, and unchanged full-instruction execution.
+These contract tests do not replace checkpoint-backed simulator evaluation.
+
 ## 📦 Checkpoints and external assets
 
 The public `RoboCombine` source release does not bundle checkpoints. Runtime
