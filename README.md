@@ -2,7 +2,7 @@
 
 <h1>
   <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Bar%20Chart.png" alt="Bar Chart" width="40" height="40" />
-  RoboCombine: Code-Only Evaluation Runtime for Compositional Robot Manipulation
+  [NeurIPS2026] RoboCombine: Code-Only Evaluation Runtime for Compositional Robot Manipulation
 </h1>
 
 <div align="center">
