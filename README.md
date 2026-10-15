@@ -7,6 +7,12 @@ Embodied Manipulation
 </h1>
 
 <div align="center">
+  <a href="https://arxiv.org/pdf/2610.15425">
+    <img src="https://img.shields.io/badge/arXiv-2610.15425-b31b1b?logo=arxiv" alt="Paper PDF on arXiv">
+  </a>
+  <a href="https://huggingface.co/papers/2610.15425">
+    <img src="https://img.shields.io/badge/HuggingFace-Paper-yellow?logo=huggingface&logoColor=yellow" alt="Paper on Hugging Face">
+  </a>
   <a href="https://huggingface.co/datasets/AutoLab-SJTU/RoboCombine">
     <img src="https://img.shields.io/badge/HuggingFace-RoboCombine-yellow?logo=huggingface&logoColor=yellow">
   </a>
