@@ -29,6 +29,8 @@ Embodied Manipulation
 </div>
 
 ## 📢 News
+> **[2026-10]** 📄 Our paper is now available on [arXiv](https://arxiv.org/abs/2610.15425).
+>
 > **[2026-10]** 🎉 Evaluation code of RoboCombine is available now.
 
 ## ✨ What does RoboCombine provide?
