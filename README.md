@@ -2,10 +2,16 @@
 
 <h1>
   <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Bar%20Chart.png" alt="Bar Chart" width="40" height="40" />
-  [NeurIPS2026] RoboCombine: Code-Only Evaluation Runtime for Compositional Robot Manipulation
+  [NeurIPS2026] Exploring the Limits of Combinatorial Generalization in Embodied Manipulation
 </h1>
 
 <div align="center">
+  <a href="https://arxiv.org/pdf/2610.15425">
+    <img src="https://img.shields.io/badge/arXiv-2610.15425-b31b1b" alt="arXiv paper">
+  </a>
+  <a href="https://huggingface.co/papers/2610.15425">
+    <img src="https://img.shields.io/badge/HuggingFace-Paper-yellow?logo=huggingface" alt="Hugging Face paper">
+  </a>
   <a href="https://huggingface.co/datasets/AutoLab-SJTU/RoboCombine">
     <img src="https://img.shields.io/badge/HuggingFace-RoboCombine-yellow?logo=huggingface&logoColor=yellow">
   </a>
