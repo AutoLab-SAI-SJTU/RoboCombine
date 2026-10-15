@@ -6,6 +6,10 @@
 Embodied Manipulation
 </h1>
 
+<p align="center">
+  Xupeng Zhang, Yantai Yang, Chang Guo, Zhaokai Yin, Zhipeng Zhang
+</p>
+
 <div align="center">
   <a href="https://arxiv.org/pdf/2610.15425">
     <img src="https://img.shields.io/badge/arXiv-2610.15425-b31b1b?logo=arxiv" alt="Paper PDF on arXiv">
