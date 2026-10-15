@@ -344,3 +344,19 @@ tasks/<task_name>/evaluation_statistics.json
 uv run pytest
 uv build --sdist
 ```
+
+## 📖 Citation
+
+If you find RoboCombine useful in your research, please cite our paper:
+
+```bibtex
+@misc{zhang2026exploringlimitscombinatorialgeneralization,
+  title         = {Exploring the Limits of Combinatorial Generalization in Embodied Manipulation},
+  author        = {Xupeng Zhang and Yantai Yang and Chang Guo and Zhaokai Yin and Zhipeng Zhang},
+  year          = {2026},
+  eprint        = {2610.15425},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.RO},
+  url           = {https://arxiv.org/abs/2610.15425}
+}
+```
